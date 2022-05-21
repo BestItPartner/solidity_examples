@@ -4,13 +4,21 @@ const {MerkleTree } = require('merkletreejs');
 const keccak256 = require('keccak256');
 
 describe("TestNFTToken", function () {  
+  let nftToken;
+  let signers;
+
+  beforeEach(async () => {    
+    if (nftToken == null) {
+      signers = await ethers.getSigners();
+
+      const MyToken = await ethers.getContractFactory("MyToken");
+      nftToken = await MyToken.deploy();
+      await nftToken.deployed();
+      console.log('nftToken: ', nftToken.address);
+    }
+  });
 
   it("Should return checking result of whitelist addresses", async function () {
-    const MyToken = await ethers.getContractFactory("MyToken");
-    const nftToken = await MyToken.deploy();
-    await nftToken.deployed();
-    console.log('nftToken: ', nftToken.address);
-
     const whitelists = [
       "address1", 
       "address2", 
@@ -30,5 +38,20 @@ describe("TestNFTToken", function () {
 
     const testInvalidLeaf = keccak256("invalid address");
     expect(await nftToken.isValid(hexProof, testInvalidLeaf)).to.equal(false);
+
+    merkleTree.addLeaf(testInvalidLeaf);
+    const newRootHash = merkleTree.getRoot();
+    await nftToken.setRoot(newRootHash);
+    const newHexProof = merkleTree.getHexProof(testInvalidLeaf);
+    expect(await nftToken.isValid(newHexProof, testInvalidLeaf)).to.equal(true);    
   });
+
+  it("Sould returh checking result using Signature and message hash", async () => {
+    const message = "example message";
+    const messagehash = keccak256(message);
+    const signature = await signers[0].signMessage(messagehash);
+
+    expect(await nftToken.isValidSignature(signers[0].address, messagehash, signature)).to.equal(true);
+  });
+
 });
