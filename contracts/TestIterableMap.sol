@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 pragma abicoder v2;
 
-import "contracts/libraries.sol";
+import "./libraries/libraries.sol";
 
 contract TestIterableMap {
     using IterableMapping for IterableMapping.Map;
